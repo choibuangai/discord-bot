@@ -31,5 +31,6 @@ async def addrole(ctx, member: discord.Member, role: discord.Role):
         await ctx.send(f"⚠️ Lỗi: {e}")
 
 # chạy bot - KHÔNG để token công khai
-bot.run(os.getenv("DISCORD_TOKEN") or "MTQzMTk3MzExNTE5NzUyNjA1Nw.GO6-0U.8J-lp8ATvfVp39w86skSyTcGhC2VcgaDDLFZqs")
+bot.run(os.getenv("DISCORD_TOKEN")
+
 
