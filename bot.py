@@ -17,11 +17,12 @@ tree = bot.tree
 
 
 @bot.event
+@bot.event
 async def on_ready():
+    await bot.tree.sync()  # QUAN TRỌNG
     print(f"🤖 Bot đã đăng nhập thành công: {bot.user}")
-    try:
-        synced = await tree.sync()
-        print(f"✅ Slash commands đã sync: {len(synced)} lệnh")
+    print("✅ Slash commands đã được đồng bộ với Discord!")
+
     except Exception as e:
         print(f"⚠️ Lỗi sync lệnh: {e}")
 
@@ -54,6 +55,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
