@@ -66,37 +66,38 @@ async def join_vc(interaction):
         vc = await channel.connect()
     return vc
 
-@tree.command(name="play", description="Phát nhạc từ link YouTube 🎵")
-@app_commands.describe(url="Link YouTube cần phát")
+@tree.command(name="play", description="Phát nhạc từ YouTube 🎶")
+@app_commands.describe(url="Link YouTube hoặc tên bài hát")
 async def play(interaction: discord.Interaction, url: str):
-    voice_channel = interaction.user.voice.channel if interaction.user.voice else None
-    if not voice_channel:
-        await interaction.response.send_message("❌ Bạn cần vào voice channel trước!", ephemeral=True)
+    vc = await join_vc(interaction)
+    if vc is None:
         return
 
-    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
-    if not vc:
-        vc = await voice_channel.connect()
-
-    await interaction.response.defer()  # tránh Discord timeout
+    await interaction.response.send_message(f"🔎 Đang tải nhạc: `{url}` ...")
 
     ydl_opts = {
-        "format": "bestaudio/best",
-        "quiet": True,
-        "noplaylist": True,
-        "extract_flat": False,
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'default_search': 'ytsearch',
+        'noplaylist': True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-        audio_url = info["url"]
+        if 'entries' in info:
+            info = info['entries'][0]
+        url2 = info['url']
+        title = info['title']
 
-    ffmpeg_options = {
-        "options": "-vn"
-    }
+    source = await discord.FFmpegOpusAudio.from_probe(url2, method='fallback')
 
-    vc.play(discord.FFmpegPCMAudio(audio_url, **ffmpeg_options))
-    await interaction.followup.send(f"🎶 Đang phát: **{info['title']}**")
+    guild_id = interaction.guild.id
+    if guild_id not in queues:
+        queues[guild_id] = []
+
+    if not vc.is_playing():
+        vc.play(source, after=lambda e: play_next(interaction))
+        await interaction.followup.send(f"🎵 Đang phát: **{title}**")
     else:
         queues[guild_id].append(source)
         await interaction.followup.send(f"📀 Đã thêm vào hàng chờ: **{title}**")
