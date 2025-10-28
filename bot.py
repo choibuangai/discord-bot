@@ -15,8 +15,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # Tạo tree để đăng ký slash commands
 tree = bot.tree
 
-
-@bot.event
 @bot.event
 async def on_ready():
     await bot.tree.sync()  # QUAN TRỌNG
@@ -55,6 +53,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
