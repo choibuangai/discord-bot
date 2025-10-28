@@ -10,6 +10,7 @@ from keepalive import keep_alive
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
+intents.guilds = True
 intents.members = True
 
 # Tạo bot client
@@ -49,95 +50,128 @@ async def addrole(interaction: discord.Interaction, member: discord.Member, role
         await interaction.response.send_message("❌ Bot không đủ quyền để thêm role này (hãy kéo role bot lên cao hơn).")
     except Exception as e:
         await interaction.response.send_message(f"⚠️ Lỗi: {e}")
-# ==== LỆNH PHÁT NHẠC ====
-def play_next(ctx):
-    guild_id = ctx.guild.id
-    if queues[guild_id]:
-        source = queues[guild_id].pop(0)
-        ctx.voice_client.play(source, after=lambda e: play_next(ctx))
 
-async def join_vc(interaction):
-    if interaction.user.voice is None:
-        await interaction.response.send_message("❌ Bạn phải vào voice channel trước!", ephemeral=True)
-        return None
-    channel = interaction.user.voice.channel
-    vc = interaction.guild.voice_client
-    if vc is None:
-        vc = await channel.connect()
-    return vc
-
-@tree.command(name="play", description="Phát nhạc từ YouTube 🎶")
-@app_commands.describe(url="Link YouTube hoặc tên bài hát")
-async def play(interaction: discord.Interaction, url: str):
-    vc = await join_vc(interaction)
-    if vc is None:
+# ==============================
+# /join – Vào kênh thoại
+# ==============================
+@tree.command(name="join", description="Cho bot vào kênh thoại hiện tại của bạn")
+async def join(interaction: discord.Interaction):
+    if not interaction.user.voice:
+        await interaction.response.send_message("❌ Bạn phải ở trong kênh thoại trước!", ephemeral=True)
         return
 
-    await interaction.response.send_message(f"🔎 Đang tải nhạc: `{url}` ...")
+    channel = interaction.user.voice.channel
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
 
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'quiet': True,
-        'default_search': 'ytsearch',
-        'noplaylist': True,
-    }
+    if vc and vc.is_connected():
+        await vc.move_to(channel)
+    else:
+        await channel.connect()
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        if 'entries' in info:
-            info = info['entries'][0]
-        url2 = info['url']
-        title = info['title']
+    await interaction.response.send_message(f"✅ Đã kết nối tới **{channel.name}**")
 
-    source = await discord.FFmpegOpusAudio.from_probe(url2, method='fallback')
+
+# ==============================
+# /play – Phát nhạc
+# ==============================
+@tree.command(name="play", description="Phát nhạc từ YouTube")
+@app_commands.describe(url="Link YouTube")
+async def play(interaction: discord.Interaction, url: str):
+    if not interaction.user.voice:
+        await interaction.response.send_message("❌ Bạn phải ở trong kênh thoại trước!", ephemeral=True)
+        return
+
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
+    if not vc or not vc.is_connected():
+        vc = await interaction.user.voice.channel.connect()
+
+    await interaction.response.send_message("🎵 Đang tải nhạc...")
+
+    ydl_opts = {'format': 'bestaudio'}
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            audio_url = info['url']
+            title = info.get('title', 'Không rõ')
+    except Exception as e:
+        await interaction.followup.send(f"⚠️ Lỗi khi tải nhạc: {e}")
+        return
 
     guild_id = interaction.guild.id
     if guild_id not in queues:
         queues[guild_id] = []
+    queues[guild_id].append((audio_url, title))
 
     if not vc.is_playing():
-        vc.play(source, after=lambda e: play_next(interaction))
-        await interaction.followup.send(f"🎵 Đang phát: **{title}**")
-    else:
-        queues[guild_id].append(source)
-        await interaction.followup.send(f"📀 Đã thêm vào hàng chờ: **{title}**")
+        await play_next(interaction.guild, vc)
 
-@tree.command(name="pause", description="Tạm dừng nhạc ⏸️")
+    await interaction.followup.send(f"🎶 Thêm vào hàng chờ: **{title}**")
+
+
+async def play_next(guild, vc):
+    guild_id = guild.id
+    if guild_id not in queues or len(queues[guild_id]) == 0:
+        await vc.disconnect()
+        return
+
+    url, title = queues[guild_id].pop(0)
+    source = discord.FFmpegPCMAudio(url)
+    vc.play(source, after=lambda e: bot.loop.create_task(play_next(guild, vc)))
+    print(f"🎧 Đang phát: {title}")
+
+
+# ==============================
+# /pause – Tạm dừng nhạc
+# ==============================
+@tree.command(name="pause", description="Tạm dừng bài hát hiện tại")
 async def pause(interaction: discord.Interaction):
-    vc = interaction.guild.voice_client
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
     if vc and vc.is_playing():
         vc.pause()
-        await interaction.response.send_message("⏸️ Đã tạm dừng nhạc!")
+        await interaction.response.send_message("⏸️ Đã tạm dừng.")
     else:
-        await interaction.response.send_message("⚠️ Không có bài hát nào đang phát!")
+        await interaction.response.send_message("❌ Không có nhạc đang phát.", ephemeral=True)
 
-@tree.command(name="resume", description="Tiếp tục phát nhạc ▶️")
+
+# ==============================
+# /resume – Tiếp tục nhạc
+# ==============================
+@tree.command(name="resume", description="Tiếp tục phát nhạc")
 async def resume(interaction: discord.Interaction):
-    vc = interaction.guild.voice_client
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
     if vc and vc.is_paused():
         vc.resume()
-        await interaction.response.send_message("▶️ Tiếp tục phát nhạc!")
+        await interaction.response.send_message("▶️ Tiếp tục phát.")
     else:
-        await interaction.response.send_message("⚠️ Nhạc chưa bị tạm dừng!")
+        await interaction.response.send_message("❌ Không có nhạc bị tạm dừng.", ephemeral=True)
 
-@tree.command(name="stop", description="Dừng phát nhạc và rời kênh 🔇")
+
+# ==============================
+# /stop – Dừng phát và rời kênh
+# ==============================
+@tree.command(name="stop", description="Dừng phát và rời khỏi kênh thoại")
 async def stop(interaction: discord.Interaction):
-    vc = interaction.guild.voice_client
-    if vc:
-        queues[interaction.guild.id] = []
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
+    if vc and vc.is_connected():
         await vc.disconnect()
-        await interaction.response.send_message("🛑 Đã dừng nhạc và rời kênh!")
+        queues[interaction.guild.id] = []
+        await interaction.response.send_message("⏹️ Đã dừng và rời kênh.")
     else:
-        await interaction.response.send_message("⚠️ Bot chưa vào kênh thoại nào!")
+        await interaction.response.send_message("❌ Bot không ở trong kênh thoại.", ephemeral=True)
 
-@tree.command(name="queue", description="Xem danh sách bài hát trong hàng chờ 🎧")
+
+# ==============================
+# /queue – Xem hàng chờ
+# ==============================
+@tree.command(name="queue", description="Xem danh sách bài hát trong hàng chờ")
 async def queue(interaction: discord.Interaction):
     guild_id = interaction.guild.id
     if guild_id not in queues or len(queues[guild_id]) == 0:
-        await interaction.response.send_message("📭 Hàng chờ trống!")
-    else:
-        desc = "\n".join([f"{i+1}. {src.title}" for i, src in enumerate(queues[guild_id])])
-        await interaction.response.send_message(f"📜 **Danh sách hàng chờ:**\n{desc}")
+        await interaction.response.send_message("📭 Hàng chờ trống.")
+        return
+
+    queue_list = "\n".join([f"{i+1}. {title}" for i, (_, title) in enumerate(queues[guild_id])])
+    await interaction.response.send_message(f"📜 **Hàng chờ:**\n{queue_list}")
 
 
 # Chạy web keepalive + bot
@@ -145,6 +179,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
