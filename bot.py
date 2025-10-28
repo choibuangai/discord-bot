@@ -66,38 +66,37 @@ async def join_vc(interaction):
         vc = await channel.connect()
     return vc
 
-@tree.command(name="play", description="Phát nhạc từ YouTube 🎶")
-@app_commands.describe(url="Link YouTube hoặc tên bài hát")
+@tree.command(name="play", description="Phát nhạc từ link YouTube 🎵")
+@app_commands.describe(url="Link YouTube cần phát")
 async def play(interaction: discord.Interaction, url: str):
-    vc = await join_vc(interaction)
-    if vc is None:
+    voice_channel = interaction.user.voice.channel if interaction.user.voice else None
+    if not voice_channel:
+        await interaction.response.send_message("❌ Bạn cần vào voice channel trước!", ephemeral=True)
         return
 
-    await interaction.response.send_message(f"🔎 Đang tải nhạc: `{url}` ...")
+    vc = discord.utils.get(bot.voice_clients, guild=interaction.guild)
+    if not vc:
+        vc = await voice_channel.connect()
+
+    await interaction.response.defer()  # tránh Discord timeout
 
     ydl_opts = {
-        'format': 'bestaudio/best',
-        'quiet': True,
-        'default_search': 'ytsearch',
-        'noplaylist': True,
+        "format": "bestaudio/best",
+        "quiet": True,
+        "noplaylist": True,
+        "extract_flat": False,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-        if 'entries' in info:
-            info = info['entries'][0]
-        url2 = info['url']
-        title = info['title']
+        audio_url = info["url"]
 
-    source = await discord.FFmpegOpusAudio.from_probe(url2, method='fallback')
+    ffmpeg_options = {
+        "options": "-vn"
+    }
 
-    guild_id = interaction.guild.id
-    if guild_id not in queues:
-        queues[guild_id] = []
-
-    if not vc.is_playing():
-        vc.play(source, after=lambda e: play_next(interaction))
-        await interaction.followup.send(f"🎵 Đang phát: **{title}**")
+    vc.play(discord.FFmpegPCMAudio(audio_url, **ffmpeg_options))
+    await interaction.followup.send(f"🎶 Đang phát: **{info['title']}**")
     else:
         queues[guild_id].append(source)
         await interaction.followup.send(f"📀 Đã thêm vào hàng chờ: **{title}**")
@@ -145,6 +144,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
