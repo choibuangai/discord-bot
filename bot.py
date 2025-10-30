@@ -87,7 +87,24 @@ async def play(interaction: discord.Interaction, url: str):
 
     await interaction.response.send_message("🎵 Đang tải nhạc...")
 
-    ydl_opts = {'format': 'bestaudio'}
+    ydl_opts = {
+        'format': 'bestaudio',
+        'cookiefile': 'cookies.txt'
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            audio_url = info['url']
+            title = info.get('title', 'Không rõ')
+    except Exception as e:
+        await interaction.followup.send(f"⚠️ Lỗi khi tải nhạc: {e}")
+        return
+
+    guild_id = interaction.guild.id
+    if guild_id not in queues:
+        queues[guild_id] = []
+    queues[guild_id].append((audio_url, title))
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -179,6 +196,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
