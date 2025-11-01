@@ -2,14 +2,19 @@ import os
 import discord
 from discord import app_commands
 from discord.ext import commands
+from openai import AsyncOpenAI
+from dotenv import load_dotenv
 import asyncio
 import random
 import yt_dlp
 from keepalive import keep_alive
+load_dotenv()
+client = AsyncOpenAI(api_key=os.getenv("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"))
 
 # Bật intents để bot có thể đọc tin nhắn, member, role
 intents = discord.Intents.default()
 intents.message_content = True
+intents.messages = True
 intents.voice_states = True
 intents.guilds = True
 intents.members = True
@@ -233,6 +238,84 @@ async def giveaway(interaction: discord.Interaction, prize: str, duration: str, 
     winner_list = random.sample(users, min(winners, len(users)))
     winners_mentions = ", ".join(u.mention for u in winner_list)
     await interaction.channel.send(f"🎊 Chúc mừng {winners_mentions}! Bạn đã thắng **{prize}** 🎁")
+#===================================
+#CHAT  GPT
+#===================================
+conversation_history = {}
+
+@tree.command(name="chat", description="Trò chuyện với AI")
+@app_commands.describe(message="Tin nhắn bạn muốn nói với bot")
+async def chat(interaction: discord.Interaction, message: str):
+    user_id = str(interaction.user.id)
+    await interaction.response.defer()
+
+    # Tạo danh sách hội thoại cho từng người
+    if user_id not in conversation_history:
+        conversation_history[user_id] = []
+
+    conversation_history[user_id].append({"role": "user", "content": message})
+
+    # Giữ tối đa 5 tin gần nhất
+    if len(conversation_history[user_id]) > 5:
+        conversation_history[user_id] = conversation_history[user_id][-5:]
+
+    # Gọi OpenAI API
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",  # Hoặc gpt-3.5-turbo nếu bạn muốn rẻ hơn
+            messages=[
+                {"role": "system", "content": """
+Bạn là ngải — một người bạn AI người Việt thân thiện, biết nói chuyện tự nhiên, cảm xúc, hài hước nhẹ.
+Bạn nói chuyện bằng giọng vui vẻ, gần gũi, đôi khi pha chút meme hoặc emoji cho tự nhiên.
+Đừng quá nghiêm túc, hãy nói chuyện như một người bạn thật sự.
+"""},
+                *conversation_history[user_id]
+            ],
+        )
+
+        reply = response.choices[0].message.content
+
+        # Lưu phản hồi vào lịch sử
+        conversation_history[user_id].append({"role": "assistant", "content": reply})
+        await interaction.followup.send(reply)
+
+    except Exception as e:
+        await interaction.followup.send(f"⚠️ Có lỗi khi gọi AI: {e}")
+
+# ————————————————————————————
+# (Tùy chọn) Tự động phản hồi khi ai nhắc tên bot
+# ————————————————————————————
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if bot.user.mentioned_in(message):
+        user_id = str(message.author.id)
+
+        if user_id not in conversation_history:
+            conversation_history[user_id] = []
+
+        conversation_history[user_id].append({"role": "user", "content": message.content})
+
+        try:
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": """
+Bạn là ngải — một người bạn AI người Việt thân thiện, tự nhiên, dễ thương, biết pha trò và bộc lộ cảm xúc.
+Luôn nói chuyện gần gũi, không quá nghiêm túc, như đang nhắn tin với bạn bè.
+"""},
+                    *conversation_history[user_id]
+                ],
+            )
+
+            reply = response.choices[0].message.content
+            conversation_history[user_id].append({"role": "assistant", "content": reply})
+            await message.reply(reply)
+
+        except Exception as e:
+            await message.reply(f"⚠️ Có lỗi khi gọi AI: {e}")
 
 
 
@@ -241,6 +324,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
