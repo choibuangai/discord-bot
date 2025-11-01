@@ -3,4 +3,6 @@ Flask
 yt-dlp
 ffmpeg-python
 PyNaCl
+openai
+
 
