@@ -190,24 +190,22 @@ async def queue(interaction: discord.Interaction):
 
     queue_list = "\n".join([f"{i+1}. {title}" for i, (_, title) in enumerate(queues[guild_id])])
     await interaction.response.send_message(f"📜 **Hàng chờ:**\n{queue_list}")
-    
+#===============================
+#tạo giveaway
+#===============================
 @tree.command(name="giveaway", description="Tạo một giveaway 🎉")
-@app_commands.describe(
-    prize="Phần thưởng cho người thắng",
-    duration="Thời gian (vd: 30s, 5m, 1h)",
-    winners="Số lượng người thắng (mặc định 1)"
-)
 async def giveaway(interaction: discord.Interaction, prize: str, duration: str, winners: int = 1):
-    """Tạo giveaway slash command"""
-    # Chuyển duration sang giây
+    await interaction.response.send_message(f"🎉 Giveaway cho **{prize}** đã bắt đầu!", ephemeral=True)
+
+    # Chuyển thời gian
     time_multipliers = {"s": 1, "m": 60, "h": 3600}
     try:
         seconds = int(duration[:-1]) * time_multipliers[duration[-1].lower()]
     except:
-        await interaction.response.send_message("⚠️ Sai định dạng thời gian! Dùng như: `30s`, `5m`, `1h`", ephemeral=True)
+        await interaction.followup.send("⚠️ Sai định dạng thời gian! Dùng như: `30s`, `5m`, `1h`", ephemeral=True)
         return
 
-    # Gửi thông báo giveaway
+    # Tạo embed
     embed = discord.Embed(
         title="🎉 GIVEAWAY 🎉",
         description=f"**Giải thưởng:** {prize}\n"
@@ -219,26 +217,21 @@ async def giveaway(interaction: discord.Interaction, prize: str, duration: str, 
     message = await interaction.channel.send(embed=embed)
     await message.add_reaction("🎉")
 
-    await interaction.response.send_message(f"🎉 Giveaway cho **{prize}** đã bắt đầu!", ephemeral=True)
-
-    # Đợi hết thời gian
+    print("✅ Giveaway started!")
     await asyncio.sleep(seconds)
+    print("⏰ Time’s up!")
 
-    # Lấy lại tin nhắn để đọc reaction
+    # Lấy danh sách người tham gia (discord.py >= 2.4)
     new_message = await interaction.channel.fetch_message(message.id)
-    users = await new_message.reactions[0].users().flatten()
-    users = [u for u in users if not u.bot]  # bỏ bot
+    users = [u async for u in new_message.reactions[0].users()]
+    users = [u for u in users if not u.bot]
 
-    if len(users) == 0:
+    if not users:
         await interaction.channel.send("😢 Không có ai tham gia giveaway.")
         return
 
-    if winners > len(users):
-        winners = len(users)
-
-    winner_list = random.sample(users, winners)
+    winner_list = random.sample(users, min(winners, len(users)))
     winners_mentions = ", ".join(u.mention for u in winner_list)
-
     await interaction.channel.send(f"🎊 Chúc mừng {winners_mentions}! Bạn đã thắng **{prize}** 🎁")
 
 
@@ -248,6 +241,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
