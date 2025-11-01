@@ -9,7 +9,7 @@ import random
 import yt_dlp
 from keepalive import keep_alive
 load_dotenv()
-client = AsyncOpenAI(api_key=os.getenv("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"))
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Bật intents để bot có thể đọc tin nhắn, member, role
 intents = discord.Intents.default()
@@ -324,6 +324,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
