@@ -18,10 +18,10 @@ intents.messages = True
 intents.voice_states = True
 intents.guilds = True
 intents.members = True
-GUILD_ID = 1126175374041161759
 
 # Tạo bot client
 bot = commands.Bot(command_prefix="!", intents=intents)
+GUILD_ID = 1126175374041161759
 
 # Tạo tree để đăng ký slash commands
 tree = bot.tree
@@ -30,7 +30,7 @@ tree = bot.tree
 async def on_ready():
     print(f"🤖 Bot đã đăng nhập thành công: {bot.user}")
     try:
-        synced = await tree.sync()
+        synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
         print(f"✅ Slash commands đã sync: {len(synced)} lệnh")
     except Exception as e:
         print(f"⚠️ Lỗi sync lệnh: {e}")
@@ -381,6 +381,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
