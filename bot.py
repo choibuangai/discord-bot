@@ -320,22 +320,19 @@ Luôn nói chuyện gần gũi, không quá nghiêm túc, như đang nhắn tin 
 # ============================
 # 🔇 MUTE
 # ============================
+from datetime import timedelta
+
 @bot.tree.command(name="mute", description="Tắt tiếng một thành viên", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(member="Người cần mute", duration="Thời gian (phút)", reason="Lý do")
 async def mute(interaction: discord.Interaction, member: discord.Member, duration: int, reason: str = "Không có lý do"):
-    if not interaction.user.guild_permissions.moderate_members:
-        return await interaction.response.send_message("🚫 Bạn không có quyền mute!", ephemeral=True)
+    try:
+        await member.timeout_for(timedelta(minutes=duration), reason=reason)
+        await interaction.response.send_message(
+            f"🔇 {member.mention} đã bị hạn chế {duration} phút. Lý do: {reason}"
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Không thể mute {member.mention}: {e}", ephemeral=True)
 
-    muted_role = discord.utils.get(interaction.guild.roles, name="Muted")
-    if not muted_role:
-        return await interaction.response.send_message("❌ Không tìm thấy role **Muted**!", ephemeral=True)
-
-    await member.add_roles(muted_role, reason=reason)
-    await interaction.response.send_message(f"🔇 {member.mention} đã bị mute {duration} phút.\n📄 Lý do: {reason}")
-
-    await asyncio.sleep(duration * 60)
-    await member.remove_roles(muted_role)
-    await interaction.channel.send(f"✅ {member.mention} đã được unmute sau {duration} phút!")
 
 # ============================
 # ⚠️ WARN
@@ -367,23 +364,31 @@ async def ban(interaction: discord.Interaction, member: discord.Member, reason: 
         return await interaction.response.send_message("🚫 Bạn không có quyền ban!", ephemeral=True)
 
     await member.ban(reason=reason)
-    await interaction.response.send_message(f"🔨 {member.mention} đã bị ban.\n📄 Lý do: {reason}")
+    await interaction.response.send_message(f"⛔ {member.mention} đã bị ban.\n📄 Lý do: {reason}")
+    
+# ==========================
+# 👢 KICK
+# ==========================
+@bot.tree.command(name="kick", description="kick thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần kick", reason="Lý do")
+async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "Không có lý do"):
+    try:
+        await member.kick(reason=reason)
+        await interaction.response.send_message(f"🚫 {member.mention} đã bị kick. Lý do: {reason}")
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Không thể kick {member.mention}: {e}", ephemeral=True)
 
 # ============================
 # ♻️ UNMUTE
 # ============================
-@bot.tree.command(name="unmute", description="Gỡ mute một thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần unmute")
+@bot.tree.command(name="unmute", description="Gỡ hạn chế thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần gỡ mute")
 async def unmute(interaction: discord.Interaction, member: discord.Member):
-    if not interaction.user.guild_permissions.moderate_members:
-        return await interaction.response.send_message("🚫 Bạn không có quyền unmute!", ephemeral=True)
-
-    muted_role = discord.utils.get(interaction.guild.roles, name="Muted")
-    if muted_role in member.roles:
-        await member.remove_roles(muted_role)
-        await interaction.response.send_message(f"✅ {member.mention} đã được gỡ mute.")
-    else:
-        await interaction.response.send_message(f"❌ {member.mention} hiện không bị mute.", ephemeral=True)
+    try:
+        await member.timeout_for(None)  # Bỏ giới hạn
+        await interaction.response.send_message(f"✅ {member.mention} đã được gỡ hạn chế.")
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Lỗi khi unmute: {e}", ephemeral=True)
 
 
 
@@ -393,6 +398,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
