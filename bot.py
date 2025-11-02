@@ -12,12 +12,13 @@ load_dotenv()
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Bật intents để bot có thể đọc tin nhắn, member, role
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
 intents.messages = True
 intents.voice_states = True
 intents.guilds = True
 intents.members = True
+GUILD_ID = 1126175374041161759
 
 # Tạo bot client
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -316,6 +317,62 @@ Luôn nói chuyện gần gũi, không quá nghiêm túc, như đang nhắn tin 
 
         except Exception as e:
             await message.reply(f"⚠️ Có lỗi khi gọi AI: {e}")
+# ============================
+# 🔇 MUTE
+# ============================
+@bot.tree.command(name="mute", description="Tắt tiếng một thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần mute", duration="Thời gian (số phút)", reason="Lý do")
+async def mute(interaction: discord.Interaction, member: discord.Member, duration: int, reason: str = "Không có lý do"):
+    muted_role = discord.utils.get(interaction.guild.roles, name="Muted")
+    if not muted_role:
+        return await interaction.response.send_message("❌ Không tìm thấy role Muted!", ephemeral=True)
+
+    await member.add_roles(muted_role, reason=reason)
+    await interaction.response.send_message(f"🔇 {member.mention} đã bị mute {duration} phút. Lý do: {reason}")
+
+    await asyncio.sleep(duration * 60)
+    await member.remove_roles(muted_role)
+    await interaction.followup.send(f"✅ {member.mention} đã được unmute!")
+
+# ============================
+# ⚠️ WARN
+# ============================
+warnings = {}
+
+@bot.tree.command(name="warn", description="Cảnh cáo thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần cảnh cáo", reason="Lý do cảnh cáo")
+async def warn(interaction: discord.Interaction, member: discord.Member, reason: str):
+    user_id = str(member.id)
+    warnings[user_id] = warnings.get(user_id, 0) + 1
+
+    await interaction.response.send_message(f"⚠️ {member.mention} đã bị cảnh cáo ({warnings[user_id]} lần). Lý do: {reason}")
+
+    if warnings[user_id] >= 3:
+        await member.kick(reason="Nhận 3 cảnh cáo")
+        await interaction.followup.send(f"🚪 {member.mention} đã bị kick vì quá 3 cảnh cáo.")
+
+# ============================
+# 🔨 BAN
+# ============================
+@bot.tree.command(name="ban", description="Cấm vĩnh viễn một thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần ban", reason="Lý do")
+async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "Không có lý do"):
+    await member.ban(reason=reason)
+    await interaction.response.send_message(f"🔨 {member.mention} đã bị ban. Lý do: {reason}")
+
+# ============================
+# ♻️ UNMUTE
+# ============================
+@bot.tree.command(name="unmute", description="Gỡ mute một thành viên", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(member="Người cần unmute")
+async def unmute(interaction: discord.Interaction, member: discord.Member):
+    muted_role = discord.utils.get(interaction.guild.roles, name="Muted")
+    if muted_role in member.roles:
+        await member.remove_roles(muted_role)
+        await interaction.response.send_message(f"✅ {member.mention} đã được gỡ mute.")
+    else:
+        await interaction.response.send_message(f"❌ {member.mention} không bị mute.")
+
 
 
 
@@ -324,6 +381,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
