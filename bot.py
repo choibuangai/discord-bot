@@ -4,6 +4,8 @@ from discord import app_commands
 from discord.ext import commands
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from discord.ext import commands, tasks
+from datetime import datetime, timedelta
 import asyncio
 import random
 import yt_dlp
@@ -32,7 +34,8 @@ async def on_ready():
     try:
         synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
         print(f"✅ Slash commands đã sync: {len(synced)} lệnh")
-    except Exception as e:
+    except Exception as 
+        reset_weekly_points.start()
         print(f"⚠️ Lỗi sync lệnh: {e}")
 
 
@@ -389,6 +392,48 @@ async def unmute(interaction: discord.Interaction, member: discord.Member):
         await interaction.response.send_message(f"✅ {member.mention} đã được gỡ hạn chế.")
     except Exception as e:
         await interaction.response.send_message(f"❌ Lỗi khi unmute: {e}", ephemeral=True)
+# 📊 Lưu điểm hoạt động (dạng {user_id: điểm})
+activity_points = {}
+
+# Khi ai đó gửi tin nhắn
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+    user_id = message.author.id
+    activity_points[user_id] = activity_points.get(user_id, 0) + 1  # +1 điểm mỗi tin nhắn
+    await bot.process_commands(message)
+
+# Khi ai đó tham gia voice channel
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if before.channel is None and after.channel is not None:  # Vừa vào voice
+        start_time = datetime.now()
+        await asyncio.sleep(300)  # Mỗi 5 phút cho 5 điểm (tùy bạn chỉnh)
+        if member.voice and member.voice.channel:  # Vẫn còn trong voice
+            activity_points[member.id] = activity_points.get(member.id, 0) + 5
+
+# 🏆 Lệnh xem bảng xếp hạng
+@bot.tree.command(name="leaderboard", description="Xem bảng xếp hạng năng động tuần này")
+async def leaderboard(interaction: discord.Interaction):
+    if not activity_points:
+        await interaction.response.send_message("Chưa có ai hoạt động tuần này 😴")
+        return
+
+    sorted_points = sorted(activity_points.items(), key=lambda x: x[1], reverse=True)
+    top_list = ""
+    for i, (user_id, points) in enumerate(sorted_points[:10], start=1):
+        user = await bot.fetch_user(user_id)
+        top_list += f"**#{i}** {user.name} — `{points} điểm`\n"
+
+    await interaction.response.send_message(f"🏆 **Bảng Xếp Hạng Năng Động Tuần** 🏆\n{top_list}")
+
+# ⏰ Reset điểm mỗi tuần
+@tasks.loop(hours=168)  # 168 giờ = 1 tuần
+async def reset_weekly_points():
+    global activity_points
+    activity_points = {}
+    print("✅ Đã reset bảng xếp hạng tuần!")
 
 
 
@@ -398,6 +443,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
