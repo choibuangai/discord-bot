@@ -36,7 +36,9 @@ async def on_ready():
         print(f"✅ Slash commands đã sync: {len(synced)} lệnh")
     except Exception as 
         reset_weekly_points.start()
-        print(f"⚠️ Lỗi sync lệnh: {e}")
+        except Exception as e:
+    print(f"⚠️ Lỗi sync lệnh: {e}")
+
 
 
 # Slash command /ping
@@ -443,6 +445,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
