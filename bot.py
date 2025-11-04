@@ -34,10 +34,9 @@ async def on_ready():
     try:
         synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
         print(f"✅ Slash commands đã sync: {len(synced)} lệnh")
-    except Exception as 
         reset_weekly_points.start()
-        except Exception as e:
-    print(f"⚠️ Lỗi sync lệnh: {e}")
+ except Exception as e:
+        print(f"⚠️ Lỗi sync lệnh: {e}")
 
 
 
@@ -445,6 +444,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
