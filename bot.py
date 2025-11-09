@@ -500,16 +500,16 @@ async def leaderboard(interaction: discord.Interaction):
         return await interaction.response.send_message("❌ Chưa có dữ liệu hoạt động!")
 
     sorted_points = sorted(points.items(), key=lambda x: x[1], reverse=True)
-    top = sorted_points[:10]
+    top = sorted_points[:9]
 
     embed = discord.Embed(
-        title="🏆 BẢNG XẾP HẠNG NĂNG ĐỘNG TUẦN NÀY 🏆",
+        title="🏆 WEEKLY LEADERBOARD 🏆 ",
         color=discord.Color.gold()
     )
 
     desc = ""
     for i, (user_id, score) in enumerate(top, start=1):
-        medal = "👑" if i == 1 else "2️⃣" if i == 2 else "3️⃣" if i == 3 else f"{i}️⃣"
+        medal = "1️⃣" if i == 1 else "2️⃣" if i == 2 else "3️⃣" if i == 3 else f"{i}️⃣"
         desc += f"{medal} <@{user_id}> — **{score}** điểm\n"
     embed.description = desc
     embed.set_footer(text="Tự động reset mỗi 7 ngày")
@@ -553,6 +553,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
