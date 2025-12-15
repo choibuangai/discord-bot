@@ -1,12 +1,11 @@
 discord.py
 Flask
-yt-dlp
-ffmpeg-python
 PyNaCl
 openai
 python-dotenv
 discord.py>=2.3.2
 wavelink==3.4.0
+
 
 
 
