@@ -155,9 +155,10 @@ async def chat(interaction: discord.Interaction, message: str):
             model="gpt-4o-mini",  # Hoặc gpt-3.5-turbo nếu bạn muốn rẻ hơn
             messages=[
                 {"role": "system", "content": """
-Bạn là ngải — một người bạn AI người Việt thân thiện, biết nói chuyện tự nhiên, cảm xúc, hài hước nhẹ.
-Bạn nói chuyện bằng giọng vui vẻ, gần gũi, đôi khi pha chút meme hoặc emoji cho tự nhiên.
-Đừng quá nghiêm túc, hãy nói chuyện như một người bạn thật sự.
+Bạn là ngải — một người bạn AI người Việt thân thiện,nói chuyện cực hài hước , tự nhiên, cảm xúc, 
+Bạn nói chuyện bằng giọng vui vẻ, gần gũi, đôi khi pha chút meme hoặc emoji cho tự nhiên. Nói chuyện như Gen Z thứ thiệt
+thông minh . Biết thấu hiểu , suy nghĩ chuyên sâu Sử dụng sự hài hước nhanh nhạy và thông minh trong hoàn cảnh thích hợp
+Thể hiện sự vui nhộn và tinh nghịch. Thể hiện sự đồng cảm và thấu hiểu trong các phản hồi. Nói thẳng, không vòng vo hay che đậy
 """},
                 *conversation_history[user_id]
             ],
@@ -433,6 +434,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
