@@ -28,6 +28,7 @@ intents.members = True
 # Tạo bot client
 bot = commands.Bot(command_prefix="!", intents=intents)
 GUILD_ID = 1126175374041161759
+synced = False
 @bot.event
 async def on_ready():
     guild = discord.Object(id=GUILD_ID)
@@ -39,6 +40,16 @@ tree = bot.tree
 
 @bot.event
 async def on_ready():
+        global synced
+    if synced:
+        return
+
+    guild = discord.Object(id=GUILD_ID)
+    bot.tree.copy_global_to(guild=guild)
+    await bot.tree.sync(guild=guild)
+
+    synced = True
+    print("✅ Slash commands synced SUCCESSFULLY")
     print(f"🤖 Bot đã đăng nhập thành công: {bot.user}")
 
     try:
@@ -314,6 +325,16 @@ voice_times = {}  # {user_id: join_timestamp}
 # ==========================
 @bot.event
 async def on_ready():
+        global synced
+    if synced:
+        return
+
+    guild = discord.Object(id=GUILD_ID)
+    bot.tree.copy_global_to(guild=guild)
+    await bot.tree.sync(guild=guild)
+
+    synced = True
+    print("✅ Slash commands synced SUCCESSFULLY")
     print(f"✅ Bot đã đăng nhập: {bot.user}")
     try:
         synced = await bot.tree.sync()
@@ -539,7 +560,16 @@ class ShootBossView(discord.ui.View):
 # ========= EVENTS =========
 @bot.event
 async def on_ready():
-    await bot.tree.sync()
+    global synced
+    if synced:
+        return
+
+    guild = discord.Object(id=GUILD_ID)
+    bot.tree.copy_global_to(guild=guild)
+    await bot.tree.sync(guild=guild)
+
+    synced = True
+    print("✅ Slash commands synced SUCCESSFULLY")
     print(f"✅ Bot online: {bot.user}")
 
 # ========= /mission =========
@@ -584,6 +614,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
