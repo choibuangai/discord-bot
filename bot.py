@@ -10,6 +10,9 @@ import asyncio
 import random
 import json
 import time
+import datetime
+import sqlite3
+import random
 from keepalive import keep_alive
 load_dotenv()
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -425,6 +428,97 @@ async def reset_weekly_points():
     points = {}
     save_points(points)
     print("🔁 Đã reset bảng xếp hạng tuần!")
+    # ====== DATABASE ======
+db = sqlite3.connect("mission.db")
+cur = db.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS mission_log (
+  date TEXT,
+  user_id TEXT PRIMARY KEY,
+  points INTEGER
+)
+""")
+db.commit()
+
+# ====== UTILS ======
+def today():
+    return datetime.date.today().isoformat()
+
+# ====== MISSION SYSTEM ======
+active_missions = {}  # message_id: (correct_emoji, user_id)
+
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f"✅ Bot online: {bot.user}")
+
+@bot.tree.command(name="mission", description="bắn  điểm  mù")
+async def mission(interaction: discord.Interaction):
+
+    uid = str(interaction.user.id)
+    d = today()
+
+    cur.execute(
+        "SELECT 1 FROM mission_log WHERE date=? AND user_id=?",
+        (d, uid)
+    )
+    if cur.fetchone():
+        await interaction.response.send_message(
+            "❌ Hôm nay bạn làm nhiệm vụ rồi!",
+            ephemeral=True
+        )
+        return
+
+    emojis = ["◀", "⏺", "▶"]
+    correct = random.choice(emojis)
+
+    await interaction.response.send_message(
+        "🔫 **Bạn có 1 viên đạn!**\n"
+        "Chọn điểm  mù  để bắn:"
+    )
+
+    msg = await interaction.original_response()
+
+    for e in emojis:
+        await msg.add_reaction(e)
+
+    active_missions[msg.id] = (correct, uid)
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
+
+    mid = reaction.message.id
+    if mid not in active_missions:
+        return
+
+    correct, uid = active_missions[mid]
+    if str(user.id) != uid:
+        return
+
+    emoji = str(reaction.emoji)
+    d = today()
+
+    if emoji == correct:
+        points = 100
+        text = "🎉 **BẮN TRÚNG!** +100 điểm"
+    else:
+        points = -50
+        text = "💀 **BẮN TRƯỢT!** Bạn  đã  bị  bắn chết"
+
+    cur.execute(
+        "INSERT OR REPLACE INTO mission_log VALUES (?,?,?)",
+        (d, uid, points)
+    )
+    db.commit()
+
+    await reaction.message.channel.send(
+        f"{user.mention} {text}"
+    )
+
+    del active_missions[mid]
 
 
 
@@ -434,6 +528,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
