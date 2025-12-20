@@ -420,12 +420,6 @@ async def resetleaderboard_error(interaction: discord.Interaction, error):
 
 
 
-
-# Chạy web keepalive + bot
-if __name__ == "__main__":
-    keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
-    print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
-    bot.run(os.getenv("DISCORD_TOKEN"))
 #===================================
 # BẮN  BOSS
 #===================================
@@ -579,6 +573,13 @@ async def mission(interaction: discord.Interaction):
     view = ShootBossView(uid, title == "👑 BOSS HIẾM", reward)
 
     await interaction.response.send_message(embed=embed, view=view)
+
+# Chạy web keepalive + bot
+if __name__ == "__main__":
+    keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
+    print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
+    bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
