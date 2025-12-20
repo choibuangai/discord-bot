@@ -566,7 +566,7 @@ async def shoot(interaction: discord.Interaction, target: discord.Member):
         )
         return
 
-    emojis = ["🎯", "💣", "❌"]
+    emojis = ["◀", "⏺", "▶"]
     correct = random.choice(emojis)
 
     await interaction.response.send_message(
@@ -617,7 +617,7 @@ async def on_reaction_add(reaction, user):
 
     # đổi lượt
     match["turn"] = target
-    match["correct"] = random.choice(["🎯", "💣", "❌"])
+    match["correct"] = random.choice(["◀", "⏺", "▶"])
 
     msg = (
         f"{user.mention} {result}\n"
@@ -640,6 +640,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
