@@ -27,14 +27,12 @@ intents.members = True
 
 # Tạo bot client
 bot = commands.Bot(command_prefix="!", intents=intents)
-GUILD_ID = 1126175374041161759
 synced = False
 @bot.event
 async def on_ready():
-    guild = discord.Object(id=GUILD_ID)
-    bot.tree.copy_global_to(guild=guild)
-    await bot.tree.sync(guild=guild)
-
+    bot.tree.copy_global
+    await bot.tree.sync
+    
 # Tạo tree để đăng ký slash commands
 tree = bot.tree
 
@@ -44,9 +42,8 @@ async def on_ready():
     if synced:
         return
 
-    guild = discord.Object(id=GUILD_ID)
-    bot.tree.copy_global_to(guild=guild)
-    await bot.tree.sync(guild=guild)
+    bot.tree.copy_global
+    await bot.tree.sync
 
     synced = True
     print("✅ Slash commands synced SUCCESSFULLY")
@@ -329,9 +326,8 @@ async def on_ready():
     if synced:
         return
 
-    guild = discord.Object(id=GUILD_ID)
-    bot.tree.copy_global_to(guild=guild)
-    await bot.tree.sync(guild=guild)
+    bot.tree.copy_global
+    await bot.tree.sync
 
     synced = True
     print("✅ Slash commands synced SUCCESSFULLY")
@@ -564,9 +560,8 @@ async def on_ready():
     if synced:
         return
 
-    guild = discord.Object(id=GUILD_ID)
-    bot.tree.copy_global_to(guild=guild)
-    await bot.tree.sync(guild=guild)
+    bot.tree.copy_global
+    await bot.tree.sync
 
     synced = True
     print("✅ Slash commands synced SUCCESSFULLY")
@@ -614,6 +609,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
