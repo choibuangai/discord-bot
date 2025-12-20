@@ -428,24 +428,46 @@ async def reset_weekly_points():
     points = {}
     save_points(points)
     print("🔁 Đã reset bảng xếp hạng tuần!")
+    #========================
     # ====== DATABASE ======
+    #========================
 db = sqlite3.connect("mission.db")
 cur = db.cursor()
 
 cur.execute("""
-CREATE TABLE IF NOT EXISTS mission_log (
-  date TEXT,
-  user_id TEXT PRIMARY KEY,
-  points INTEGER
+CREATE TABLE IF NOT EXISTS pvp_players (
+    user_id TEXT PRIMARY KEY,
+    lives INTEGER
 )
 """)
 db.commit()
 
+def get_lives(uid):
+    cur.execute("SELECT lives FROM pvp_players WHERE user_id=?", (uid,))
+    row = cur.fetchone()
+    if not row:
+        cur.execute("INSERT INTO pvp_players VALUES (?,?)", (uid, 2))
+        db.commit()
+        return 2
+    return row[0]
+
+def set_lives(uid, lives):
+    cur.execute(
+        "UPDATE pvp_players SET lives=? WHERE user_id=?",
+        (lives, uid)
+    )
+    db.commit()
+#=====================
 # ====== UTILS ======
+#=====================
 def today():
     return datetime.date.today().isoformat()
-
+# ========= ACTIVE MATCHES =========
+# message_id : match_data
+active_matches = {}
+#=============================
 # ====== MISSION SYSTEM ======
+#=============================
 active_missions = {}  # message_id: (correct_emoji, user_id)
 
 @bot.event
@@ -519,6 +541,96 @@ async def on_reaction_add(reaction, user):
     )
 
     del active_missions[mid]
+    # ========= SLASH COMMAND =========
+@bot.tree.command(name="shoot", description="PVP theo lượt, bắn cho vui")
+@app_commands.describe(target="Người bạn muốn đấu")
+async def shoot(interaction: discord.Interaction, target: discord.Member):
+
+    if target.bot or target.id == interaction.user.id:
+        await interaction.response.send_message(
+            "❌ Không hợp lệ",
+            ephemeral=True
+        )
+        return
+
+    p1 = str(interaction.user.id)
+    p2 = str(target.id)
+
+    l1 = get_lives(p1)
+    l2 = get_lives(p2)
+
+    if l1 <= 0 or l2 <= 0:
+        await interaction.response.send_message(
+            "💀 Một trong hai đã chết rồi",
+            ephemeral=True
+        )
+        return
+
+    emojis = ["🎯", "💣", "❌"]
+    correct = random.choice(emojis)
+
+    await interaction.response.send_message(
+        f"🔫 **{interaction.user.mention} bắt đầu đấu với {target.mention}!**\n"
+        f"👉 **Lượt bắn: {interaction.user.mention}**"
+    )
+
+    msg = await interaction.original_response()
+
+    for e in emojis:
+        await msg.add_reaction(e)
+
+    active_matches[msg.id] = {
+        "turn": p1,
+        "p1": p1,
+        "p2": p2,
+        "correct": correct
+    }
+
+# ========= REACTION =========
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
+
+    mid = reaction.message.id
+    if mid not in active_matches:
+        return
+
+    match = active_matches[mid]
+
+    if str(user.id) != match["turn"]:
+        return  # không phải lượt bạn
+
+    emoji = str(reaction.emoji)
+    shooter = match["turn"]
+    target = match["p2"] if shooter == match["p1"] else match["p1"]
+
+    shooter_lives = get_lives(shooter)
+    target_lives = get_lives(target)
+
+    if emoji == match["correct"]:
+        target_lives -= 1
+        set_lives(target, target_lives)
+        result = "🎯 **BẮN TRÚNG!**"
+    else:
+        result = "❌ **BẮN TRƯỢT!**"
+
+    # đổi lượt
+    match["turn"] = target
+    match["correct"] = random.choice(["🎯", "💣", "❌"])
+
+    msg = (
+        f"{user.mention} {result}\n"
+        f"❤️ Bạn: {shooter_lives} | 🎯 Đối thủ: {target_lives}\n"
+        f"👉 **Lượt tiếp theo: <@{match['turn']}>**"
+    )
+
+    if target_lives <= 0:
+        msg += "\n☠️ **TRẬN ĐẤU KẾT THÚC!**"
+        del active_matches[mid]
+
+    await reaction.message.channel.send(msg)
+
 
 
 
@@ -528,6 +640,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
