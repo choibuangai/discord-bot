@@ -30,24 +30,30 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 synced = False
 @bot.event
 async def on_ready():
-    bot.tree.copy_global
-    await bot.tree.sync
+    global synced
+    if synced:
+        return
+
+    await bot.tree.sync()
+    synced = True
+
+    print("🌍 Global slash commands synced")
+    print(f"🤖 Bot online: {bot.user}")
     
 # Tạo tree để đăng ký slash commands
 tree = bot.tree
 
 @bot.event
 async def on_ready():
-        global synced
+    global synced
     if synced:
         return
 
-    bot.tree.copy_global
-    await bot.tree.sync
-
+    await bot.tree.sync()
     synced = True
-    print("✅ Slash commands synced SUCCESSFULLY")
-    print(f"🤖 Bot đã đăng nhập thành công: {bot.user}")
+
+    print("🌍 Global slash commands synced")
+    print(f"🤖 Bot online: {bot.user}")
 
     try:
         synced = await bot.tree.sync(guild=discord.Object(id=GUILD_ID))
@@ -322,16 +328,15 @@ voice_times = {}  # {user_id: join_timestamp}
 # ==========================
 @bot.event
 async def on_ready():
-        global synced
+    global synced
     if synced:
         return
 
-    bot.tree.copy_global
-    await bot.tree.sync
-
+    await bot.tree.sync()
     synced = True
-    print("✅ Slash commands synced SUCCESSFULLY")
-    print(f"✅ Bot đã đăng nhập: {bot.user}")
+
+    print("🌍 Global slash commands synced")
+    print(f"🤖 Bot online: {bot.user}")
     try:
         synced = await bot.tree.sync()
         print(f"Slash commands synced ({len(synced)} lệnh)")
@@ -560,12 +565,11 @@ async def on_ready():
     if synced:
         return
 
-    bot.tree.copy_global
-    await bot.tree.sync
-
+    await bot.tree.sync()
     synced = True
-    print("✅ Slash commands synced SUCCESSFULLY")
-    print(f"✅ Bot online: {bot.user}")
+
+    print("🌍 Global slash commands synced")
+    print(f"🤖 Bot online: {bot.user}")
 
 # ========= /mission =========
 @bot.tree.command(name="mission", description="Bắn boss mỗi ngày (50/50)")
@@ -609,6 +613,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
