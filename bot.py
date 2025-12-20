@@ -435,7 +435,6 @@ BOSS_IMAGES = [
     "https://media.tenor.com/QKhVabFS_k0AAAAM/gwent-gwentcard.gif",
     "https://i.pinimg.com/originals/34/03/a6/3403a60a51c8e3cba7c78f94f41bc7f1.gif",
     "https://prodigits.co.uk/pthumbs/screensavers/down/fantasy/monster_yak7ohxw.gif",
-    "https://cdna.artstation.com/p/assets/images/images/062/289/536/original/grigory-gore-mtg-art4-gif.gif?1682780204",
 ]
 
 RARE_BOSS_IMAGE = "https://giffiles.alphacoders.com/207/207660.gif"
@@ -580,6 +579,7 @@ async def mission(interaction: discord.Interaction):
     view = ShootBossView(uid, title == "👑 BOSS HIẾM", reward)
 
     await interaction.response.send_message(embed=embed, view=view)
+
 
 
 
