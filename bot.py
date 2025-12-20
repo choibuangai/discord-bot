@@ -635,7 +635,7 @@ if target_lives <= 0:
 
     del active_matches[mid]
 
-    await reaction.message.channel.send(msg)
+await reaction.message.channel.send(msg)
 
 
 
@@ -646,6 +646,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
