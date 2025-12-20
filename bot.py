@@ -426,6 +426,160 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+#===================================
+# BẮN  BOSS
+#===================================
+BOSS_IMAGES = [
+    "https://i.pinimg.com/originals/d6/de/0e/d6de0e820d43a690cd376336646bff2b.gif",
+    "https://i.pinimg.com/originals/4d/4d/18/4d4d18e32a5083a3b0c557d2395fa75f.gif",
+    "https://media.tenor.com/QKhVabFS_k0AAAAM/gwent-gwentcard.gif",
+    "https://i.pinimg.com/originals/34/03/a6/3403a60a51c8e3cba7c78f94f41bc7f1.gif",
+    "https://prodigits.co.uk/pthumbs/screensavers/down/fantasy/monster_yak7ohxw.gif",
+    "https://cdna.artstation.com/p/assets/images/images/062/289/536/original/grigory-gore-mtg-art4-gif.gif?1682780204",
+]
+
+RARE_BOSS_IMAGE = "https://giffiles.alphacoders.com/207/207660.gif"
+
+NORMAL_REWARD = 100
+RARE_REWARD = 500
+RARE_CHANCE = 0.1  # 10%
+
+# ========= BOT =========
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# ========= DATABASE =========
+db = sqlite3.connect("mission.db")
+cur = db.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS daily_mission (
+    user_id TEXT PRIMARY KEY,
+    last_date TEXT,
+    pf INTEGER
+)
+""")
+db.commit()
+
+# ========= UTILS =========
+def today():
+    return date.today().isoformat()
+
+def get_user(uid):
+    cur.execute(
+        "SELECT last_date, pf FROM daily_mission WHERE user_id=?",
+        (uid,)
+    )
+    row = cur.fetchone()
+    if not row:
+        cur.execute(
+            "INSERT INTO daily_mission VALUES (?,?,?)",
+            (uid, "", 0)
+        )
+        db.commit()
+        return "", 0
+    return row
+
+# ========= BUTTON VIEW =========
+class ShootBossView(discord.ui.View):
+    def __init__(self, uid, is_rare, reward):
+        super().__init__(timeout=60)
+        self.uid = uid
+        self.is_rare = is_rare
+        self.reward = reward
+
+    @discord.ui.button(label="🔫 BẮN", style=discord.ButtonStyle.danger)
+    async def shoot(self, interaction: discord.Interaction, button: discord.ui.Button):
+
+        if str(interaction.user.id) != self.uid:
+            await interaction.response.send_message(
+                "❌ Đây không phải mission của bạn!",
+                ephemeral=True
+            )
+            return
+
+        last_date, pf = get_user(self.uid)
+        d = today()
+
+        if last_date == d:
+            await interaction.response.send_message(
+                "❌ Bạn đã bắn hôm nay rồi!",
+                ephemeral=True
+            )
+            return
+
+        win = random.choice([True, False])
+
+        embed = interaction.message.embeds[0]
+
+        if win:
+            pf += self.reward
+            embed.description = (
+                "🎯 **BẠN ĐÃ HẠ GỤC BOSS!**\n\n"
+                f"💰 Nhận **{self.reward} PF**"
+            )
+            embed.color = discord.Color.green()
+        else:
+            embed.description = (
+                "☠️ **BOSS PHẢN CÔNG!**\n\n"
+                "Bạn đã bị giết ngược..."
+            )
+            embed.color = discord.Color.dark_red()
+
+        cur.execute(
+            "UPDATE daily_mission SET last_date=?, pf=? WHERE user_id=?",
+            (d, pf, self.uid)
+        )
+        db.commit()
+
+        # khóa nút
+        for item in self.children:
+            item.disabled = True
+
+        await interaction.response.edit_message(embed=embed, view=self)
+
+# ========= EVENTS =========
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f"✅ Bot online: {bot.user}")
+
+# ========= /mission =========
+@bot.tree.command(name="mission", description="Bắn boss mỗi ngày (50/50)")
+async def mission(interaction: discord.Interaction):
+
+    uid = str(interaction.user.id)
+    d = today()
+
+    last_date, _ = get_user(uid)
+
+    if last_date == d:
+        await interaction.response.send_message(
+            "❌ Hôm nay bạn đã dùng viên đạn rồi!",
+            ephemeral=True
+        )
+        return
+
+    # boss hiếm?
+    if random.random() < RARE_CHANCE:
+        boss_image = RARE_BOSS_IMAGE
+        reward = RARE_REWARD
+        title = "👑 BOSS HIẾM"
+    else:
+        boss_image = random.choice(BOSS_IMAGES)
+        reward = NORMAL_REWARD
+        title = "🐉 BOSS NGÀY"
+
+    embed = discord.Embed(
+        title=title,
+        description="🔫 **Bấm nút để bắn boss!**\n⚠️ Mỗi ngày chỉ bắn 1 lần",
+        color=discord.Color.red()
+    )
+    embed.set_image(url=boss_image)
+
+    view = ShootBossView(uid, title == "👑 BOSS HIẾM", reward)
+
+    await interaction.response.send_message(embed=embed, view=view)
 
 
 
