@@ -627,6 +627,10 @@ async def on_reaction_add(reaction, user):
 
     if target_lives <= 0:
         msg += "\n☠️ **TRẬN ĐẤU KẾT THÚC!**"
+            set_lives(match["p1"], 2)
+    set_lives(match["p2"], 2)
+
+    msg += "\n🔄 Hai bên đã được hồi mạng để bắn tiếp!"
         del active_matches[mid]
 
     await reaction.message.channel.send(msg)
@@ -640,6 +644,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
