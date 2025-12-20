@@ -229,81 +229,6 @@ Luôn nói chuyện gần gũi, không quá nghiêm túc, như đang nhắn tin 
 
         except Exception as e:
             await message.reply(f"⚠️ Có lỗi khi gọi AI: {e}")
-# ============================
-# 🔇 MUTE
-# ============================
-from datetime import timedelta
-
-@bot.tree.command(name="mute", description="Tắt tiếng một thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần mute", duration="Thời gian (phút)", reason="Lý do")
-async def mute(interaction: discord.Interaction, member: discord.Member, duration: int, reason: str = "Không có lý do"):
-    try:
-        await member.timeout_for(timedelta(minutes=duration), reason=reason)
-        await interaction.response.send_message(
-            f"🔇 {member.mention} đã bị hạn chế {duration} phút. Lý do: {reason}"
-        )
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Không thể mute {member.mention}: {e}", ephemeral=True)
-
-
-# ============================
-# ⚠️ WARN
-# ============================
-warnings = {}
-
-@bot.tree.command(name="warn", description="Cảnh cáo thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần cảnh cáo", reason="Lý do cảnh cáo")
-async def warn(interaction: discord.Interaction, member: discord.Member, reason: str):
-    if not interaction.user.guild_permissions.moderate_members:
-        return await interaction.response.send_message("🚫 Bạn không có quyền cảnh cáo!", ephemeral=True)
-
-    user_id = str(member.id)
-    warnings[user_id] = warnings.get(user_id, 0) + 1
-
-    await interaction.response.send_message(f"⚠️ {member.mention} đã bị cảnh cáo ({warnings[user_id]} lần).\n📄 Lý do: {reason}")
-
-    if warnings[user_id] >= 3:
-        await member.kick(reason="Nhận 3 cảnh cáo")
-        await interaction.channel.send(f"🚪 {member.mention} đã bị kick vì quá 3 cảnh cáo.")
-
-# ============================
-# 🔨 BAN
-# ============================
-@bot.tree.command(name="ban", description="Cấm vĩnh viễn một thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần ban", reason="Lý do")
-async def ban(interaction: discord.Interaction, member: discord.Member, reason: str = "Không có lý do"):
-    if not interaction.user.guild_permissions.ban_members:
-        return await interaction.response.send_message("🚫 Bạn không có quyền ban!", ephemeral=True)
-
-    await member.ban(reason=reason)
-    await interaction.response.send_message(f"⛔ {member.mention} đã bị ban.\n📄 Lý do: {reason}")
-    
-# ==========================
-# 👢 KICK
-# ==========================
-@bot.tree.command(name="kick", description="kick thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần kick", reason="Lý do")
-async def kick(interaction: discord.Interaction, member: discord.Member, reason: str = "Không có lý do"):
-    try:
-        await member.kick(reason=reason)
-        await interaction.response.send_message(f"🚫 {member.mention} đã bị kick. Lý do: {reason}")
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Không thể kick {member.mention}: {e}", ephemeral=True)
-
-# ============================
-# ♻️ UNMUTE
-# ============================
-@bot.tree.command(name="unmute", description="Gỡ hạn chế thành viên", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(member="Người cần gỡ mute")
-async def unmute(interaction: discord.Interaction, member: discord.Member):
-    try:
-        await member.timeout_for(None)  # Bỏ giới hạn
-        await interaction.response.send_message(f"✅ {member.mention} đã được gỡ hạn chế.")
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Lỗi khi unmute: {e}", ephemeral=True)
-
-
-POINTS_FILE = "points.json"
 
 # ==========================
 # 📦 DỮ LIỆU
@@ -613,6 +538,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
