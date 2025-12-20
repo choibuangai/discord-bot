@@ -456,7 +456,7 @@ db.commit()
 
 # ========= UTILS =========
 def today():
-    return date.today().isoformat()
+    return datetime.date.today().isoformat()
 
 def get_user(uid):
     cur.execute(
@@ -579,6 +579,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
