@@ -389,10 +389,6 @@ NORMAL_REWARD = 100
 RARE_REWARD = 500
 RARE_CHANCE = 0.1  # 10%
 
-# ========= BOT =========
-intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
-
 # ========= DATABASE =========
 db = sqlite3.connect("mission.db")
 cur = db.cursor()
@@ -538,6 +534,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
