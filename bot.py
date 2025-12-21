@@ -22,7 +22,6 @@ intents = discord.Intents.all()
 intents.message_content = True
 intents.messages = True
 intents.voice_states = True
-intents.guilds = True
 intents.members = True
 
 # Tạo bot client
@@ -534,6 +533,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
