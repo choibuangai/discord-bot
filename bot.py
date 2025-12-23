@@ -380,9 +380,22 @@ BOSS_IMAGES = [
     "https://media.tenor.com/QKhVabFS_k0AAAAM/gwent-gwentcard.gif",
     "https://i.pinimg.com/originals/34/03/a6/3403a60a51c8e3cba7c78f94f41bc7f1.gif",
     "https://prodigits.co.uk/pthumbs/screensavers/down/fantasy/monster_yak7ohxw.gif",
+    "https://i.pinimg.com/originals/a2/44/46/a24446e2908aef199df78b8f7b8a7ec4.gif",
+    "https://media.tenor.com/el_kGdQWgF4AAAAM/darksouls.gif",
+    "https://ojevensen.com/wp-content/uploads/2025/04/Dark-Souls-Sword-GIF-by-BANDAI-NAMCO-Entertainment.gif",
+    "https://64.media.tumblr.com/d8883321edb0fe571e8e28dca6ee0ab5/tumblr_pp1v8exiEl1y974tlo3_500.gif",
+    "https://66.media.tumblr.com/f5841e08347429d0ff99934c00d4de84/tumblr_o9wukmUoiq1unxlj8o1_500.gif",
+    "https://giffiles.alphacoders.com/207/207660.gif",
+    "https://c.tenor.com/uYw87Zn8CL0AAAAC/tenor.gif",
+    "https://i.pinimg.com/originals/da/a3/b2/daa3b2fbafa400da43c2f093d003b34b.gif",
+    "https://images.saymedia-content.com/.image/t_share/MTc4ODA1NTU5NzM3Nzg3OTAz/three-soulsbourne-bosses-that-made-me-want-to-throw-my-controller.gif",
+    "https://i.pinimg.com/originals/4c/37/61/4c3761bba8e8801dc069487a2599cf19.gif",
+    "https://66.media.tumblr.com/33bd64d57e323e6ca1fc02093e61a244/tumblr_ooxmkrpZYY1uutgwwo3_500.gif",
+    "https://media4.giphy.com/media/v1.Y2lkPTZjMDliOTUyM2x3NXZwNHVnMDhkNzJnd2w4Zmg2NWx0OGgzczl3dTJmdDZjNDh2MCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/jqlM7zvvXy0kPJOBUw/200.gif",
+    "https://giffiles.alphacoders.com/918/91844.gif",
 ]
 
-RARE_BOSS_IMAGE = "https://giffiles.alphacoders.com/207/207660.gif"
+RARE_BOSS_IMAGE = "https://64.media.tumblr.com/fdb2776842f9a4b2d21df70431855490/f0f3622b2d3a3ad5-a0/s540x810/1381b56ddc156239913ec253556366444caff41d.gifv"
 
 NORMAL_REWARD = 100
 RARE_REWARD = 500
@@ -533,6 +546,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
