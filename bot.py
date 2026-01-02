@@ -269,105 +269,85 @@ async def on_ready():
     reset_weekly_points.start()
 
 
-# ==========================
-# 💬 TÍNH ĐIỂM CHAT
-# ==========================
+# --- LOGIC TÍNH ĐIỂM NĂNG ĐỘNG ---
+
 @bot.event
 async def on_message(message):
-    if message.author.bot:
-        return
-
-    user_id = str(message.author.id)
-    points[user_id] = points.get(user_id, 0) + 1
+    if message.author.bot or not message.guild: return
+    
+    # Cộng 1 điểm mỗi khi chat
+    uid = str(message.author.id)
+    points = load_points()
+    points[uid] = points.get(uid, 0) + 1
     save_points(points)
+    
     await bot.process_commands(message)
 
-
-# ==========================
-# 🔊 TÍNH ĐIỂM VOICE
-# ==========================
 @bot.event
 async def on_voice_state_update(member, before, after):
-    user_id = str(member.id)
+    uid = str(member.id)
+    points = load_points()
 
-    # Vào voice
+    # Khi mem bắt đầu vào Voice
     if after.channel and not before.channel:
-        voice_times[user_id] = time.time()
+        voice_times[uid] = time.time()
 
-    # Rời voice
-    elif before.channel and not after.channel and user_id in voice_times:
-        duration = int(time.time() - voice_times[user_id])
-        del voice_times[user_id]
+    # Khi mem rời Voice
+    elif before.channel and not after.channel and uid in voice_times:
+        duration = int(time.time() - voice_times.pop(uid))
+        # Quy đổi: 30 giây voice = 1 điểm
+        earned = duration // 30
+        if earned > 0:
+            points[uid] = points.get(uid, 0) + earned
+            save_points(points)
 
-        points[user_id] = points.get(user_id, 0) + duration // 30
-        save_points(points)
+# --- SLASH COMMANDS ---
 
-
-# ==========================
-# 📊 /rank
-# ==========================
-@bot.tree.command(name="rank", description="Xem điểm hoạt động cá nhân")
-async def rank(interaction: discord.Interaction):
-    user = interaction.user
-    user_id = str(user.id)
-    score = points.get(user_id, 0)
-
-    # Tính rank
-    sorted_points = sorted(points.items(), key=lambda x: x[1], reverse=True)
-    rank_pos = next((i + 1 for i, (uid, _) in enumerate(sorted_points) if uid == user_id), "Chưa có")
-
-    embed = discord.Embed(
-        title="📊 Xếp hạng cá nhân",
-        description=f"Bạn đang ở hạng **#{rank_pos}** với **{score}** điểm 🎯",
-        color=discord.Color.random()
-    )
-    embed.set_author(name=user.display_name, icon_url=user.avatar)
-    embed.set_footer(text="Hoạt động dựa trên chat & voice trong tuần")
-    await interaction.response.send_message(embed=embed)
-
-
-# ==========================
-# 🏆 /leaderboard
-# ==========================
-@bot.tree.command(name="leaderboard", description="Xem bảng xếp hạng năng động nhất tuần")
+@tree.command(name="leaderboard", description="Xem bảng vàng năng động của group")
 async def leaderboard(interaction: discord.Interaction):
-    if not points:
-        return await interaction.response.send_message("❌ Chưa có dữ liệu hoạt động!")
+    p = load_points()
+    if not p:
+        return await interaction.response.send_message("❌ Chưa có dữ liệu hoạt động nào!", ephemeral=True)
 
-    sorted_points = sorted(points.items(), key=lambda x: x[1], reverse=True)
-    top = sorted_points[:9]
+    # Lấy Top 10 ông cao điểm nhất
+    sorted_p = sorted(p.items(), key=lambda x: x[1], reverse=True)[:10]
 
     embed = discord.Embed(
-        title="🏆 WEEKLY LEADERBOARD 🏆 ",
-        color=discord.Color.gold()
+        title="🏆 BẢNG VÀNG NĂNG ĐỘNG 🏆",
+        description="Điểm số dựa trên sự hoạt động! 🔥\n" + "—" * 15,
+        color=discord.Color.from_rgb(255, 255, 0), # Màu cam cháy Gen Z
+        timestamp=datetime.now()
     )
 
-    desc = ""
-    for i, (user_id, score) in enumerate(top, start=1):
-        medal = "1️⃣" if i == 1 else "2️⃣" if i == 2 else "3️⃣" if i == 3 else f"{i}️⃣"
-        desc += f"{medal} <@{user_id}> — **{score}** điểm\n"
-    embed.description = desc
-    embed.set_footer(text="Tự động reset mỗi 7 ngày")
+    # 🖼️ ẢNH BANNER TO (Bỏ thumbnail góc phải theo ý sếp)
+    banner_url = "https://cdn.discordapp.com/attachments/1432967660139974768/1449567613054226523/fixedbulletlines.gif?ex=69586b0a&is=6957198a&hm=983179347f10af54976d073b5b567366680886de6b5e82ccf6a01bd9e4ab52b5&"
+    embed.set_image(url=banner_url)
 
+    leaderboard_text = ""
+    medals = ["🔥", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+
+    for i, (uid, score) in enumerate(sorted_p):
+        leaderboard_text += f"{medals[i]} <@{uid}> — **{score}** điểm\n"
+
+    embed.add_field(name="Top 10 Chiến Thần:", value=leaderboard_text, inline=False)
+    embed.set_footer(text=f"Người xem: {interaction.user.name}")
+    
     await interaction.response.send_message(embed=embed)
 
+@tree.command(name="reset_leaderboard", description="Xóa sạch điểm bảng xếp hạng (Chỉ Staff)")
+@app_commands.checks.has_permissions(manage_guild=True) # Chỉ ai có quyền Quản lý Server mới dùng được
+async def reset_lb(interaction: discord.Interaction):
+    # Lưu file trắng để reset điểm
+    save_points({})
+    
+    print(f"🧹 {interaction.user.name} đã reset điểm.")
+    await interaction.response.send_message(f"✅ Bảng xếp hạng đã được reset thành công! Bắt đầu cuộc đua mới thôi anh em! 🚀")
 
-# ==========================
-# 🔁 /resetleaderboard (admin only)
-# ==========================
-@bot.tree.command(name="resetleaderboard", description="Reset bảng xếp hạng (admin)")
-@app_commands.checks.has_permissions(administrator=True)
-async def resetleaderboard(interaction: discord.Interaction):
-    global points
-    points = {}
-    save_points(points)
-    await interaction.response.send_message("🔁 Đã reset bảng xếp hạng tuần!", ephemeral=True)
-
-
-@resetleaderboard.error
-async def resetleaderboard_error(interaction: discord.Interaction, error):
-    if isinstance(error, app_commands.errors.MissingPermissions):
-        await interaction.response.send_message("❌ Bạn không có quyền dùng lệnh này!", ephemeral=True)
+# Báo lỗi nếu mem thường bấm lệnh reset
+@reset_lb.error
+async def reset_error(interaction: discord.Interaction, error):
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message("⚠️ Bạn không có quyền Staff để thực hiện lệnh này!", ephemeral=True)
 
 
 
@@ -395,7 +375,7 @@ BOSS_IMAGES = [
     "https://giffiles.alphacoders.com/918/91844.gif",
 ]
 
-RARE_BOSS_IMAGE = "https://64.media.tumblr.com/fdb2776842f9a4b2d21df70431855490/f0f3622b2d3a3ad5-a0/s540x810/1381b56ddc156239913ec253556366444caff41d.gifv"
+RARE_BOSS_IMAGE = "https://64.media.tumblr.com/fdb2776842f9a4b2d21df70431855490/f0f3622b2d3a3ad5-a0/s540x810/1381b56ddc156239913ec253556366444caff41d.gif"
 
 NORMAL_REWARD = 100
 RARE_REWARD = 500
@@ -546,6 +526,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
