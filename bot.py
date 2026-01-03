@@ -247,27 +247,6 @@ points = load_points()
 voice_times = {}  # {user_id: join_timestamp}
 
 
-# ==========================
-# 🚀 KHI BOT KHỞI ĐỘNG
-# ==========================
-@bot.event
-async def on_ready():
-    global synced
-    if synced:
-        return
-
-    await bot.tree.sync()
-    synced = True
-
-    print("🌍 Global slash commands synced")
-    print(f"🤖 Bot online: {bot.user}")
-    try:
-        synced = await bot.tree.sync()
-        print(f"Slash commands synced ({len(synced)} lệnh)")
-    except Exception as e:
-        print(f"⚠️ Lỗi sync: {e}")
-    reset_weekly_points.start()
-
 
 # --- LOGIC TÍNH ĐIỂM NĂNG ĐỘNG ---
 
@@ -526,6 +505,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
