@@ -15,6 +15,7 @@ import sqlite3
 import random
 from keepalive import keep_alive
 load_dotenv()
+POINTS_FILE = "points.json"
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Bật intents để bot có thể đọc tin nhắn, member, role
@@ -505,6 +506,7 @@ if __name__ == "__main__":
     keepalive_url = keep_alive()  # giữ bot online nếu bạn dùng Render + UptimeRobot
     print(f"🌐 Keepalive server đang chạy tại: {keepalive_url}")
     bot.run(os.getenv("DISCORD_TOKEN"))
+
 
 
 
